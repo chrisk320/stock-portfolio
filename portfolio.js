@@ -49,6 +49,25 @@ function displayDropdown(symbols) {
         const symbolItem = document.createElement('div');
         symbolItem.classList.add('dropdown-item');
         symbolItem.innerHTML = `<strong>${symbol.symbol}</strong> (${symbol.description})`;
+
+        symbolItem.onclick = () => {
+            createStockCard(symbol.symbol);
+            dropdown.innerHTML = '';
+            document.getElementById('searchbar').value = '';
+        }
         dropdown.appendChild(symbolItem);
     });
+}
+
+function createStockCard(symbol) {
+    const stockCardsContainer = document.getElementById('stock-cards-container');
+
+    const card = document.createElement('div');
+    card.classList.add('card', 'stock-card');
+    card.innerHTML = `
+        <div class="card-body">
+            <h5 class="card-title">${symbol}</h5>
+        </div>
+    `;
+    stockCardsContainer.appendChild(card);
 }
