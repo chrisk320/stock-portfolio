@@ -14,17 +14,17 @@ async function searchStock() {
         return;
     }
 
-    const apiKey = 'crecbahr01qnd5cv0n30crecbahr01qnd5cv0n3g';
-    const url = `https://finnhub.io/api/v1/search?q=${query}&token=${apiKey}`;
+    const apiKey = '8620e79622de4c798deb7617b5859acc';
+    const url = `https://api.twelvedata.com/symbol_search?symbol=${query}&apikey=${apiKey}`;
 
     try {
         const response = await fetch(url);
         const data = await response.json();
         console.log(data);
         
-        if (data.result && data.result.length > 0) {
-            const usStocks = data.result.filter(symbol => {
-                return symbol.symbol.match(/^[A-Za-z]+$/);
+        if (data.data && data.data.length > 0) {
+            const usStocks = data.data.filter(symbol => {
+                return symbol.symbol.match(/^[A-Za-z]+$/) && (symbol.exchange === 'NYSE' || symbol.exchange === 'NASDAQ');
             });
             if (usStocks.length > 0) {
                 displayDropdown(usStocks);
@@ -48,7 +48,7 @@ function displayDropdown(symbols) {
     tenSymbols.forEach(symbol => {
         const symbolItem = document.createElement('div');
         symbolItem.classList.add('dropdown-item');
-        symbolItem.innerHTML = `<strong>${symbol.symbol}</strong> (${symbol.description})`;
+        symbolItem.innerHTML = `<strong>${symbol.symbol}</strong> (${symbol.instrument_name})`;
 
         symbolItem.onclick = () => {
             createStockCard(symbol.symbol);
@@ -71,3 +71,18 @@ function createStockCard(symbol) {
     `;
     stockCardsContainer.appendChild(card);
 }
+
+document.getElementById('add-stock-form').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    const dropdownItems = document.getElementById('dropdown').getElementsByClassName('dropdown-item');
+    if (dropdownItems.length > 0) {
+        const firstStockSymbol = dropdownItems[0].querySelector('strong').innerText;
+        createStockCard(firstStockSymbol);
+
+        document.getElementById('dropdown').innerHTML = '';
+        document.getElementById('searchbar').value = '';
+    } else {
+        alert('No stock selected or avilable to add!');
+    }
+});
