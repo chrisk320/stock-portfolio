@@ -1,4 +1,5 @@
 let debounceTimer;
+const apiKey = '8620e79622de4c798deb7617b5859acc';
 
 function debounceSearch() {
     clearTimeout(debounceTimer);
@@ -6,7 +7,7 @@ function debounceSearch() {
 }
 
 
-async function searchStock() {
+async function searchStock(apiKey) {
     const query = document.getElementById('searchbar').value.trim();
 
     if (!query) {
@@ -14,7 +15,6 @@ async function searchStock() {
         return;
     }
 
-    const apiKey = '8620e79622de4c798deb7617b5859acc';
     const url = `https://api.twelvedata.com/symbol_search?symbol=${query}&apikey=${apiKey}`;
 
     try {
@@ -51,7 +51,7 @@ function displayDropdown(symbols) {
         symbolItem.innerHTML = `<strong>${symbol.symbol}</strong> (${symbol.instrument_name})`;
 
         symbolItem.onclick = () => {
-            createStockCard(symbol.symbol);
+            fetchStockDetails(symbol.symbol, apiKey);
             dropdown.innerHTML = '';
             document.getElementById('searchbar').value = '';
         }
@@ -59,14 +59,44 @@ function displayDropdown(symbols) {
     });
 }
 
-function createStockCard(symbol) {
+async function fetchStockDetails(symbol, apiKey) {
+    const quoteUrl = `https://api.twelvedata.com/quote?symbol=${symbol}&apikey=${apiKey}`;
+    const priceUrl = `https://api.twelvedata.com/price?symbol=${symbol}&apikey=${apiKey}`;
+
+    try {
+        const priceResponse = await fetch(priceUrl);
+        const priceData = await priceResponse.json();
+        
+        const quoteResponse = await fetch(quoteUrl);
+        const quoteData = await quoteResponse.json();
+
+        if (priceData && priceData.price && quoteData) {
+            createStockCard(quoteData, priceData);
+        } else {
+            console.error('Error fetching stock details');
+        }
+    } catch (error) {
+        console.error('Error fetching stock details: ', error);
+    }
+}
+
+
+function createStockCard(quoteData, realTimePrice) {
     const stockCardsContainer = document.getElementById('stock-cards-container');
 
     const card = document.createElement('div');
     card.classList.add('card', 'stock-card');
     card.innerHTML = `
         <div class="card-body">
-            <h5 class="card-title">${symbol}</h5>
+            <h5 class="card-title">${quoteData.symbol}</h5>
+            <p><strong>Current Price:</strong> $${realTimePrice.price}</p>
+            <p><strong>Daily High:</strong> $${quoteData.high}</p>
+            <p><strong>Daily Low:</strong> $${quoteData.low}</p>
+            <p><strong>Opening Price:</strong> $${quoteData.open}</p>
+            <p><strong>Price Change:</strong> $${quoteData.change}</p>
+            <p><strong>Volume:</strong> ${quoteData.volume}</p>
+            <p><strong>52-Week High:</strong> $${quoteData.fifty_two_week.high}</p>
+            <p><strong>52-Week Low:</strong> $${quoteData.fifty_two_week.low}</p>
         </div>
     `;
     stockCardsContainer.appendChild(card);
@@ -78,7 +108,7 @@ document.getElementById('add-stock-form').addEventListener('submit', function(ev
     const dropdownItems = document.getElementById('dropdown').getElementsByClassName('dropdown-item');
     if (dropdownItems.length > 0) {
         const firstStockSymbol = dropdownItems[0].querySelector('strong').innerText;
-        createStockCard(firstStockSymbol);
+        fetchStockDetails(firstStockSymbol, apiKey);
 
         document.getElementById('dropdown').innerHTML = '';
         document.getElementById('searchbar').value = '';
