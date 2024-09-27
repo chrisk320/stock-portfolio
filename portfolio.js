@@ -89,14 +89,24 @@ function createStockCard(quoteData, realTimePrice) {
     card.innerHTML = `
         <div class="card-body">
             <h5 class="card-title">${quoteData.symbol}</h5>
-            <p><strong>Current Price:</strong> $${parseFloat(realTimePrice.price).toFixed(2)}</p>
-            <p><strong>Daily High:</strong> $${parseFloat(quoteData.high).toFixed(2)}</p>
-            <p><strong>Daily Low:</strong> $${parseFloat(quoteData.low).toFixed(2)}</p>
-            <p><strong>Opening Price:</strong> $${parseFloat(quoteData.open).toFixed(2)}</p>
-            <p><strong>Price Change:</strong> $${parseFloat(quoteData.change).toFixed(2)}</p>
-            <p><strong>Volume:</strong> ${parseFloat(quoteData.volume).toFixed(2)}</p>
-            <p><strong>52-Week High:</strong> $${parseFloat(quoteData.fifty_two_week.high).toFixed(2)}</p>
-            <p><strong>52-Week Low:</strong> $${parseFloat(quoteData.fifty_two_week.low).toFixed(2)}</p>
+            <div class="row">
+                <div class="col-md-3">
+                    <p><strong>Current Price:</strong> $${parseFloat(realTimePrice.price).toFixed(2)}</p>
+                    <p><strong>Daily High:</strong> $${parseFloat(quoteData.high).toFixed(2)}</p>
+                </div>
+                <div class="col-md-3">
+                    <p><strong>Daily Low:</strong> $${parseFloat(quoteData.low).toFixed(2)}</p>
+                    <p><strong>Opening Price:</strong> $${parseFloat(quoteData.open).toFixed(2)}</p>
+                </div>
+                <div class="col-md-3">
+                    <p><strong>Price Change:</strong> $${parseFloat(quoteData.change).toFixed(2)}</p>
+                    <p><strong>Volume:</strong> ${parseFloat(quoteData.volume).toFixed(2)}</p>
+                </div>
+                <div class="col-md-3">
+                    <p><strong>52-Week High:</strong> $${parseFloat(quoteData.fifty_two_week.high).toFixed(2)}</p>
+                    <p><strong>52-Week Low:</strong> $${parseFloat(quoteData.fifty_two_week.low).toFixed(2)}</p>
+                </div>
+            </div>       
         </div>
     `;
     stockCardsContainer.appendChild(card);
@@ -138,7 +148,18 @@ async function fetchStockPricesFromOpen(symbol, apiKey) {
         console.log(data);
 
         if (data && data.values) {
-            const labels = data.values.map(entry => entry.datetime);
+            const labels = data.values.map(entry => {
+                const datetime = entry.datetime;
+                const time = datetime.split(' ')[1];
+
+                const [hours, minutes] = time.split(':');
+                const hoursInt = parseInt(hours);
+
+                const formattedHours = hoursInt % 12 || 12;
+                const ampm = hoursInt >= 12 ? 'PM' : 'AM';
+
+                return `${formattedHours}:${minutes} ${ampm}`;
+            });
             const prices = data.values.map(entry => parseFloat(entry.previous_close).toFixed(2));
             createLineChart(labels, prices, symbol);
         } else {
@@ -171,9 +192,32 @@ function createLineChart(labels, prices, symbol) {
         },
         options: {
             scales: {
+                x: {
+                    ticks: {
+                        autoSkip: true,
+                        maxTicksLimit: 7,
+                        maxRotation: 45,
+                        minRotation: 45
+                    }
+                },
                 y: {
                     beginAtZero: false
                 }
+            },
+            plugins: {
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function(tooltipItem) {
+                            return `Price: $${tooltipItem.raw}`;
+                        }
+                    }
+                }
+            },
+            hover: {
+                mode: 'index',
+                intersect: false
             }
         }
     });
